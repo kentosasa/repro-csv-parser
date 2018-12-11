@@ -3,7 +3,7 @@ require "csv"
 require "pry"
 
 # const
-BEGINNING_DAY = Date.strptime("2018-11-7","%Y-%m-%d")
+BEGINNING_DAY = Date.strptime("2018-11-20","%Y-%m-%d")
 PUSH_TYPES = ["新規", "継続"]
 INPUT_DIR = "_INPUT/"
 OUTPUT_DIR = "_OUTPUT/"
@@ -15,7 +15,7 @@ def group_by_day(table)
     tmp = data[row[1]] || Hash.new(0)
     tmp[:send] += row[2]
     tmp[:open] += row[3]
-    tmp[:cvr] += row[4]
+    tmp[:cvr] += row[7]
     data[row[1]] = tmp
   end
   return data
@@ -26,10 +26,10 @@ def group_by_week(day_hash)
   data = Hash.new
   start_date = BEGINNING_DAY
   end_date = start_date + 7
-  while end_date < Date.today
+  while end_date <= Date.today
     day_hash.each do |key, row|
       date = Date.strptime(key,"%Y-%m-%d")
-      if start_date < date && end_date > date
+      if start_date <= date && end_date > date
         tmp = data[start_date] || Hash.new(0)
         tmp[:send] += row[:send]
         tmp[:open] += row[:open]
@@ -60,7 +60,7 @@ def output_csv(data, type, push_type)
     header = []
     start_date = BEGINNING_DAY
     end_date = start_date + 7
-    while end_date < Date.today
+    while end_date <= Date.today
       header.push(start_date)
       # 翌週に更新
       start_date += 7
@@ -79,7 +79,7 @@ def output_csv(data, type, push_type)
 
         start_date = BEGINNING_DAY
         end_date = start_date + 7
-        while end_date < Date.today
+        while end_date <= Date.today
           key = start_date
           begin
             value = campaign[key][type.to_sym]
@@ -92,7 +92,7 @@ def output_csv(data, type, push_type)
           end_date += 7  
         end
         values.unshift(campaign[:title].delete(".csv"))
-        diff = values.last(2)[0] - values.last(2)[1]
+        diff = values.last(2)[1] - values.last(2)[0]
         values.push(diff)
         table << values
       rescue => e
@@ -108,6 +108,7 @@ def init
     data = []
     filenames = Dir.open("#{push_type}#{INPUT_DIR}",&:to_a)
     filenames.each do |name|
+      next if name == ".gitkeep"
       begin
         table = CSV.table("#{push_type}#{INPUT_DIR}/#{name}")
         day_hash = group_by_day(table)
